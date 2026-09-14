@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1b2a" />
+  <title>每日得分</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div><p class="eyebrow">DAILY SCORE</p><h1 id="pageTitle">每日打卡</h1></div>
+      <button id="resetToday" class="icon-button" aria-label="重置今日打卡" title="重置今日">↻</button>
+    </header>
+
+    <section id="goalsPage" class="page" hidden>
+      <div class="card score-card">
+        <span>已分配分数</span><strong id="allocatedScore">0</strong><span>/ 100</span>
+        <div class="score-meter"><i id="scoreMeter"></i></div>
+        <p id="scoreHint">还可分配 100 分</p>
+      </div>
+      <div id="goalList" class="goal-list"></div>
+      <button id="addGoal" class="secondary-button full">＋ 添加打卡项目</button>
+      <p class="tip">每个项目可设置多个完成等级；同一项目当天只能选择一个等级。</p>
+    </section>
+
+    <section id="checkinPage" class="page">
+      <div class="daily-hero">
+        <p id="todayLabel"></p>
+        <div class="ring" id="progressRing"><span><b id="todayScore">0</b><small>/ <em id="totalPossible">0</em> 分</small></span></div>
+        <p id="progressText">从第一项开始，完成今日路径</p>
+      </div>
+      <div id="checkinPath" class="checkin-path"></div>
+      <p class="tip center">所有项目都可随时打卡。可在「目标设定」调整路径顺序。</p>
+    </section>
+
+    <section id="reviewPage" class="page" hidden>
+      <div class="period-tabs" role="tablist">
+        <button data-days="7" class="active">近 7 天</button><button data-days="14">近 14 天</button><button data-days="30">近 30 天</button>
+      </div>
+      <div class="stat-grid">
+        <article class="card"><span>平均得分</span><strong id="averageScore">0</strong><small>分 / 天</small></article>
+        <article class="card"><span>打卡天数</span><strong id="activeDays">0</strong><small>天</small></article>
+        <article class="card"><span>最佳得分</span><strong id="bestScore">0</strong><small>分</small></article>
+      </div>
+      <section class="card chart-card"><h2>每日得分</h2><div id="scoreChart" class="chart"></div></section>
+      <section class="card"><h2>目标类型分布</h2><div id="typeDistribution" class="distribution"></div></section>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="主导航">
+    <button data-page="goalsPage"><span>⚙</span>目标设定</button>
+    <button data-page="checkinPage" class="active"><span>✓</span>每日打卡</button>
+    <button data-page="reviewPage"><span>◔</span>复盘汇总</button>
+  </nav>
+  <dialog id="goalDialog"><form id="goalForm" method="dialog">
+    <div class="dialog-header"><h2 id="goalDialogTitle">新增项目</h2><button type="button" class="close" data-close>×</button></div>
+    <label>打卡项目<input id="goalName" required maxlength="30" placeholder="例如：阅读" /></label>
+    <label>类型<input id="goalType" maxlength="20" placeholder="例如：健康、学习" /></label>
+    <label>完成等级与分数</label>
+    <div id="levelInputs" class="level-inputs"></div>
+    <button id="addLevel" type="button" class="text-button">＋ 增加一个等级</button>
+    <div class="dialog-actions"><button type="button" id="deleteGoal" class="danger" hidden>删除</button><span></span><button type="button" class="secondary-button" data-close>取消</button><button class="primary-button" value="save">保存</button></div>
+  </form></dialog>
+  <dialog id="levelDialog"><form id="levelForm" method="dialog">
+    <div class="dialog-header"><h2 id="levelDialogTitle">选择完成等级</h2><button type="button" class="close" data-close>×</button></div>
+    <div id="levelChoices" class="level-choices"></div>
+    <button type="button" class="secondary-button full" data-close>暂不打卡</button>
+  </form></dialog>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -62,7 +62,7 @@ function renderSchedule(rec){
 function renderReview(){
   const data=[]; for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10), r=state.records[k]||{};data.push({d,k,score:Object.values(r).reduce((a,x)=>a+x.score,0)});}
   const active=data.filter(x=>x.score>0), sum=data.reduce((a,x)=>a+x.score,0);
-  $('#averageScore').textContent=(sum/days).toFixed(1);$('#activeDays').textContent=active.length;$('#bestScore').textContent=Math.max(0,...data.map(x=>x.score));
+  $('#averageScore').textContent=(active.length?sum/active.length:0).toFixed(1);$('#activeDays').textContent=active.length;$('#bestScore').textContent=Math.max(0,...data.map(x=>x.score));
   const cap=Math.max(1,...data.map(x=>x.score),allocated());
   $('#scoreChart').innerHTML=data.map(x=>`<div class="bar-wrap" title="${x.k}: ${x.score}分"><i class="bar" style="height:${Math.max(3,x.score/cap*100)}%"></i><small>${x.d.slice(5).replace('-','/')}</small></div>`).join('');
   const types={};state.goals.forEach(g=>types[g.type||'未分类']=(types[g.type||'未分类']||0)+max(g)); const typeTotal=Math.max(1,Object.values(types).reduce((a,x)=>a+x,0));
@@ -87,7 +87,6 @@ document.querySelectorAll('.bottom-nav button').forEach(b=>b.onclick=()=>{docume
 document.querySelectorAll('.period-tabs button').forEach(b=>b.onclick=()=>{days=+b.dataset.days;document.querySelectorAll('.period-tabs button').forEach(x=>x.classList.toggle('active',x===b));renderReview()});
 $('#resetToday').onclick=()=>{const label=activeDayOffset===0?'今日':activeDayOffset===-1?'昨日':'前天';if(confirm(`清空${label}所有打卡？`)){delete state.records[activeDateKey()];save();renderAll()}};
 $('#undoLevel').onclick=()=>{if(!selectedGoal||!todayRecord()[selectedGoal])return;if(confirm('取消本项打卡？该项目本次得分将被移除。')){const record={...todayRecord()};delete record[selectedGoal];if(Object.keys(record).length)state.records[activeDateKey()]=record;else delete state.records[activeDateKey()];save();$('#levelDialog').close();renderAll()}};
-$('#clearYesterday').onclick=()=>{const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);if(!state.records[yesterday]){alert('昨天没有可清除的打卡记录。');return}if(confirm('清除昨天的全部打卡记录？此操作无法恢复。')){delete state.records[yesterday];save();renderAll()}};
 $('#previousDate').onclick=()=>{if(activeDayOffset>-2){activeDayOffset--;renderCheckin()}};
 $('#nextDate').onclick=()=>{if(activeDayOffset<0){activeDayOffset++;renderCheckin()}};
 renderAll();

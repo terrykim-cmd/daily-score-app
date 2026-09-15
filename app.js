@@ -15,10 +15,11 @@ if (!state.goalCatalogVersion) {
   state.goalCatalogVersion = 2;
   localStorage.setItem(KEY, JSON.stringify(state));
 }
-let editingId = null, selectedGoal = null, days = 7;
+let editingId = null, selectedGoal = null, days = 7, activeDayOffset = 0;
 const $ = s => document.querySelector(s);
 const dateKey = () => new Date().toISOString().slice(0,10);
-const todayRecord = () => state.records[dateKey()] || {};
+const activeDateKey = () => {const d=new Date();d.setDate(d.getDate()+activeDayOffset);return d.toISOString().slice(0,10)};
+const todayRecord = () => state.records[activeDateKey()] || {};
 const save = () => localStorage.setItem(KEY, JSON.stringify(state));
 const max = g => Math.max(...g.levels.map(l=>Number(l.score)||0),0);
 const allocated = () => state.goals.reduce((a,g)=>a+max(g),0);
@@ -37,7 +38,9 @@ function renderGoals(){
 }
 function renderCheckin(){
   const rec=todayRecord(), total=state.goals.reduce((a,g)=>a+max(g),0), score=todayScore();
-  $('#todayLabel').textContent=fmtDate(new Date()); $('#todayScore').textContent=score; $('#totalPossible').textContent=total;
+  const activeDate=new Date();activeDate.setDate(activeDate.getDate()+activeDayOffset);
+  $('#todayLabel').textContent=fmtDate(activeDate); $('#selectedDate').textContent=activeDayOffset===0?'今天':activeDayOffset===-1?'昨天':'前天'; $('#previousDate').disabled=activeDayOffset<=-2; $('#nextDate').disabled=activeDayOffset>=0;
+  $('#todayScore').textContent=score; $('#totalPossible').textContent=total;
   $('#progressRing').style.background=`conic-gradient(var(--accent) ${total?score/total*360:0}deg,#e9eef7 0deg)`;
   const firstOpen=state.goals.findIndex(g=>!rec[g.id]);
   $('#progressText').textContent=state.goals.length && firstOpen===-1?'今日目标已全部完成，真棒！':firstOpen<0?'先设定一个目标':'可按自己的节奏完成任一项目';
@@ -62,7 +65,7 @@ function openGoal(id){
   $('#levelInputs').innerHTML='';(g?.levels||[{label:'完成',score:1}]).forEach(addLevelInput);$('#goalDialog').showModal();
 }
 function addLevelInput(l={label:'',score:''}){const row=document.createElement('div');row.className='level-line';row.innerHTML=`<input required maxlength="30" value="${escapeAttr(l.label)}" placeholder="例如：60 min"><input required type="number" min="0" max="100" value="${l.score}" placeholder="分数"><button type="button" class="remove-level">×</button>`;row.querySelector('button').onclick=()=>{if($('#levelInputs').children.length>1)row.remove()};$('#levelInputs').append(row)}
-function openLevel(id){selectedGoal=id;const g=state.goals.find(x=>x.id===id);$('#levelDialogTitle').textContent=g.name+' · 完成等级';$('#levelChoices').innerHTML=g.levels.sort((a,b)=>b.score-a.score).map(l=>`<button type="button" class="level-choice" data-label="${escapeAttr(l.label)}" data-score="${l.score}"><span>${escapeHtml(l.label)}</span><b>+${l.score} 分</b></button>`).join('');document.querySelectorAll('.level-choice').forEach(b=>b.onclick=()=>{state.records[dateKey()]={...todayRecord(),[selectedGoal]:{label:b.dataset.label,score:+b.dataset.score}};save();$('#levelDialog').close();renderAll()});$('#levelDialog').showModal()}
+function openLevel(id){selectedGoal=id;const g=state.goals.find(x=>x.id===id);$('#levelDialogTitle').textContent=g.name+' · 完成等级';$('#levelChoices').innerHTML=g.levels.sort((a,b)=>b.score-a.score).map(l=>`<button type="button" class="level-choice" data-label="${escapeAttr(l.label)}" data-score="${l.score}"><span>${escapeHtml(l.label)}</span><b>+${l.score} 分</b></button>`).join('');document.querySelectorAll('.level-choice').forEach(b=>b.onclick=()=>{state.records[activeDateKey()]={...todayRecord(),[selectedGoal]:{label:b.dataset.label,score:+b.dataset.score}};save();$('#levelDialog').close();renderAll()});$('#levelDialog').showModal()}
 function renderAll(){renderGoals();renderCheckin();renderReview()}
 function enableGoalDrag(){let source;document.querySelectorAll('.goal-row').forEach(el=>{el.ondragstart=()=>source=el;el.ondragover=e=>e.preventDefault();el.ondrop=e=>{e.preventDefault();if(source===el)return;const from=state.goals.findIndex(g=>g.id===source.dataset.id),to=state.goals.findIndex(g=>g.id===el.dataset.id);state.goals.splice(to,0,state.goals.splice(from,1)[0]);save();renderAll()}})}
 function escapeHtml(x){return String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}function escapeAttr(x){return escapeHtml(x)}
@@ -73,6 +76,8 @@ $('#deleteGoal').onclick=()=>{if(confirm('删除这个项目？历史打卡记�
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 document.querySelectorAll('.bottom-nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.page').forEach(p=>p.hidden=p.id!==b.dataset.page);document.querySelectorAll('.bottom-nav button').forEach(x=>x.classList.toggle('active',x===b));$('#pageTitle').textContent=b.textContent.trim();$('#resetToday').style.visibility=b.dataset.page==='checkinPage'?'visible':'hidden'});
 document.querySelectorAll('.period-tabs button').forEach(b=>b.onclick=()=>{days=+b.dataset.days;document.querySelectorAll('.period-tabs button').forEach(x=>x.classList.toggle('active',x===b));renderReview()});
-$('#resetToday').onclick=()=>{if(confirm('清空今日所有打卡？')){delete state.records[dateKey()];save();renderAll()}};
+$('#resetToday').onclick=()=>{const label=activeDayOffset===0?'今日':activeDayOffset===-1?'昨日':'前天';if(confirm(`清空${label}所有打卡？`)){delete state.records[activeDateKey()];save();renderAll()}};
 $('#clearYesterday').onclick=()=>{const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);if(!state.records[yesterday]){alert('昨天没有可清除的打卡记录。');return}if(confirm('清除昨天的全部打卡记录？此操作无法恢复。')){delete state.records[yesterday];save();renderAll()}};
+$('#previousDate').onclick=()=>{if(activeDayOffset>-2){activeDayOffset--;renderCheckin()}};
+$('#nextDate').onclick=()=>{if(activeDayOffset<0){activeDayOffset++;renderCheckin()}};
 renderAll();

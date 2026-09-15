@@ -28,6 +28,7 @@
 
     <section id="checkinPage" class="page">
       <div class="daily-hero">
+        <div class="period-tabs" aria-label="选择打卡日期"><button id="previousDate" aria-label="前一天">‹</button><button id="selectedDate" type="button">今天</button><button id="nextDate" aria-label="后一天">›</button></div>
         <p id="todayLabel"></p>
         <div class="ring" id="progressRing"><span><b id="todayScore">0</b><small>/ <em id="totalPossible">0</em> 分</small></span></div>
         <p id="progressText">从第一项开始，完成今日路径</p>
@@ -70,6 +71,6 @@
     <div id="levelChoices" class="level-choices"></div>
     <button type="button" class="secondary-button full" data-close>暂不打卡</button>
   </form></dialog>
-  <script src="app.js?v=20260915-clear-yesterday"></script>
+  <script src="app.js?v=20260915-date-replay"></script>
 </body>
 </html>

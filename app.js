@@ -1,13 +1,13 @@
 const KEY = 'daily-score-v1';
 const seed = [
   {id:'wake', name:'早起', type:'作息', timeStart:'05:30', timeEnd:'06:00', levels:[{label:'6 点前起床',score:8},{label:'7 点前起床',score:5},{label:'8 点前起床',score:2}]},
-  {id:'ai', name:'学 AI', type:'学习成长', timeStart:'07:00', timeEnd:'08:30', levels:[{label:'深度学习 / 实操 90 min',score:16},{label:'学习 / 实操 45 min',score:10},{label:'学习 15 min',score:4}]},
-  {id:'gym', name:'健身', type:'运动健康', timeStart:'17:00', timeEnd:'18:00', levels:[{label:'有效训练 60 min',score:12},{label:'有效训练 30 min',score:7},{label:'拉伸 / 轻训练',score:3}]},
-  {id:'tennis', name:'网球', type:'运动健康', timeStart:'18:30', timeEnd:'19:30', levels:[{label:'基础 + 实战 60 min',score:12},{label:'实战 / 专项训练',score:8},{label:'挥拍 / 步伐练习',score:3}]},
-  {id:'diet', name:'控食', type:'饮食管理', timeStart:'12:00', timeEnd:'12:30', levels:[{label:'完全按计划饮食',score:10},{label:'仅一餐偏离计划',score:5},{label:'记录饮食',score:2}]},
-  {id:'language', name:'外语学习', type:'学习成长', timeStart:'08:30', timeEnd:'09:00', levels:[{label:'输入 + 输出 45 min',score:10},{label:'有效学习 30 min',score:6},{label:'学习 15 min',score:3}]},
-  {id:'ip', name:'IP', type:'事业输出', timeStart:'20:00', timeEnd:'21:30', levels:[{label:'完成发布 / 核心作品',score:18},{label:'脚本、素材或剪辑推进',score:10},{label:'选题 / 素材整理',score:4}]},
-  {id:'sidejob', name:'Sidejob', type:'事业输出', timeStart:'21:30', timeEnd:'22:30', levels:[{label:'关键交付 / 收入推进',score:14},{label:'有效工作推进',score:8},{label:'处理单项事务',score:3}]}
+  {id:'ai', name:'学 AI', type:'学习成长', timeStart:'19:00', timeEnd:'20:30', levels:[{label:'深度学习 / 实操 90 min',score:16},{label:'学习 / 实操 45 min',score:10},{label:'学习 15 min',score:4}]},
+  {id:'gym', name:'健身', type:'运动健康', timeStart:'08:30', timeEnd:'09:30', levels:[{label:'有效训练 60 min',score:12},{label:'有效训练 30 min',score:7},{label:'拉伸 / 轻训练',score:3}]},
+  {id:'tennis', name:'网球', type:'运动健康', timeStart:'06:30', timeEnd:'08:00', levels:[{label:'基础 + 实战 60 min',score:12},{label:'实战 / 专项训练',score:8},{label:'挥拍 / 步伐练习',score:3}]},
+  {id:'diet', name:'控食', type:'饮食管理', timeStart:'22:30', timeEnd:'23:00', levels:[{label:'完全按计划饮食',score:10},{label:'仅一餐偏离计划',score:5},{label:'记录饮食',score:2}]},
+  {id:'language', name:'外语学习', type:'学习成长', timeStart:'12:45', timeEnd:'13:30', levels:[{label:'输入 + 输出 45 min',score:10},{label:'有效学习 30 min',score:6},{label:'学习 15 min',score:3}]},
+  {id:'ip', name:'IP', type:'事业输出', timeStart:'21:30', timeEnd:'23:00', levels:[{label:'完成发布 / 核心作品',score:18},{label:'脚本、素材或剪辑推进',score:10},{label:'选题 / 素材整理',score:4}]},
+  {id:'sidejob', name:'Sidejob', type:'事业输出', timeStart:'20:30', timeEnd:'21:30', levels:[{label:'关键交付 / 收入推进',score:14},{label:'有效工作推进',score:8},{label:'处理单项事务',score:3}]}
 ];
 let state = JSON.parse(localStorage.getItem(KEY) || 'null') || {goals:seed, records:{}};
 if (!state.goalCatalogVersion) {
@@ -15,6 +15,7 @@ if (!state.goalCatalogVersion) {
   state.goalCatalogVersion = 2;
 }
 if (state.goalCatalogVersion < 3) {state.goals=state.goals.map(g=>{const preset=seed.find(x=>x.id===g.id);return preset&&!g.timeStart?{...g,timeStart:preset.timeStart,timeEnd:preset.timeEnd}:g});state.goalCatalogVersion=3;localStorage.setItem(KEY, JSON.stringify(state));}
+if (state.goalCatalogVersion < 4) {state.goals=state.goals.map(g=>{const preset=seed.find(x=>x.id===g.id);return preset?{...g,timeStart:preset.timeStart,timeEnd:preset.timeEnd}:g});state.goalCatalogVersion=4;localStorage.setItem(KEY, JSON.stringify(state));}
 let editingId = null, selectedGoal = null, days = 7, activeDayOffset = 0;
 const $ = s => document.querySelector(s);
 const dateKey = () => new Date().toISOString().slice(0,10);
@@ -54,7 +55,7 @@ function renderCheckin(){
 function renderSchedule(rec){
   const startMinutes=5*60, slotHeight=28, endMinutes=24*60;
   const rows=[];for(let minute=startMinutes;minute<endMinutes;minute+=30){const h=Math.floor(minute/60).toString().padStart(2,'0'),m=(minute%60).toString().padStart(2,'0');rows.push(`<div class="schedule-tick">${m==='00'?`${h}:${m}`:''}</div>`)}
-  const blocks=state.goals.map(g=>{if(!g.timeStart||!g.timeEnd)return '';const toMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};const from=Math.max(startMinutes,toMin(g.timeStart)),to=Math.min(endMinutes,toMin(g.timeEnd));if(to<=from)return '';const done=rec[g.id];return `<button type="button" class="schedule-block ${done?'done':''}" data-id="${g.id}" style="top:${(from-startMinutes)/30*slotHeight}px;height:${Math.max(slotHeight,(to-from)/30*slotHeight-2)}px" title="${escapeAttr(g.name)} ${g.timeStart}–${g.timeEnd}"><b>${escapeHtml(g.name)}</b><small>${g.timeStart}</small></button>`}).join('');
+  const blocks=state.goals.slice().sort((a,b)=>(a.timeStart||'').localeCompare(b.timeStart||'')).map(g=>{if(!g.timeStart||!g.timeEnd)return '';const toMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};const from=Math.max(startMinutes,toMin(g.timeStart)),to=Math.min(endMinutes,toMin(g.timeEnd));if(to<=from)return '';const done=rec[g.id];return `<button type="button" class="schedule-block ${done?'done':''}" data-id="${g.id}" style="top:${(from-startMinutes)/30*slotHeight}px;height:${Math.max(slotHeight,(to-from)/30*slotHeight-2)}px" title="${escapeAttr(g.name)} ${g.timeStart}–${g.timeEnd}"><b>${escapeHtml(g.name)}</b><small>${g.timeStart}</small></button>`}).join('');
   $('#scheduleTimeline').innerHTML=rows.join('')+blocks;
   document.querySelectorAll('.schedule-block').forEach(b=>b.onclick=()=>openLevel(b.dataset.id));
 }

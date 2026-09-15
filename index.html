@@ -7,6 +7,7 @@
   <title>每日得分</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="schedule.css" />
 </head>
 <body>
   <main class="app-shell">
@@ -27,6 +28,12 @@
     </section>
 
     <section id="checkinPage" class="page">
+      <div class="checkin-layout">
+      <aside class="schedule-pane">
+        <div class="schedule-pane-header"><span>建议日程</span><small>05:00 — 24:00</small></div>
+        <div id="scheduleTimeline" class="schedule-timeline"></div>
+      </aside>
+      <div class="checkin-pane">
       <div class="daily-hero">
         <div class="period-tabs" aria-label="选择打卡日期"><button id="previousDate" aria-label="前一天">‹</button><button id="selectedDate" type="button">今天</button><button id="nextDate" aria-label="后一天">›</button></div>
         <p id="todayLabel"></p>
@@ -36,6 +43,8 @@
       </div>
       <div id="checkinPath" class="checkin-path"></div>
       <p class="tip center">所有项目都可随时打卡。可在「目标设定」调整路径顺序。</p>
+      </div>
+      </div>
     </section>
 
     <section id="reviewPage" class="page" hidden>
@@ -61,6 +70,8 @@
     <div class="dialog-header"><h2 id="goalDialogTitle">新增项目</h2><button type="button" class="close" data-close>×</button></div>
     <label>打卡项目<input id="goalName" required maxlength="30" placeholder="例如：阅读" /></label>
     <label>类型<input id="goalType" maxlength="20" placeholder="例如：健康、学习" /></label>
+    <label>建议进行时间段</label>
+    <div class="time-range"><input id="goalStart" type="time" step="1800" /><span>至</span><input id="goalEnd" type="time" step="1800" /></div>
     <label>完成等级与分数</label>
     <div id="levelInputs" class="level-inputs"></div>
     <button id="addLevel" type="button" class="text-button">＋ 增加一个等级</button>
@@ -71,6 +82,6 @@
     <div id="levelChoices" class="level-choices"></div>
     <button type="button" class="secondary-button full" data-close>暂不打卡</button>
   </form></dialog>
-  <script src="app.js?v=20260915-date-replay"></script>
+  <script src="app.js?v=20260915-schedule-split"></script>
 </body>
 </html>

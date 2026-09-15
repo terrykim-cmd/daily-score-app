@@ -1,10 +1,20 @@
 const KEY = 'daily-score-v1';
 const seed = [
-  {id:'wake', name:'早起', type:'作息', levels:[{label:'6 点前起床',score:5},{label:'7 点前起床',score:3}]},
-  {id:'tennis', name:'网球', type:'运动', levels:[{label:'练基础 + 实战',score:5},{label:'练实战',score:3}]},
-  {id:'gym', name:'健身', type:'运动', levels:[{label:'60 min',score:5},{label:'30 min',score:3}]}
+  {id:'wake', name:'早起', type:'作息', levels:[{label:'6 点前起床',score:8},{label:'7 点前起床',score:5},{label:'8 点前起床',score:2}]},
+  {id:'ai', name:'学 AI', type:'学习成长', levels:[{label:'深度学习 / 实操 90 min',score:16},{label:'学习 / 实操 45 min',score:10},{label:'学习 15 min',score:4}]},
+  {id:'gym', name:'健身', type:'运动健康', levels:[{label:'有效训练 60 min',score:12},{label:'有效训练 30 min',score:7},{label:'拉伸 / 轻训练',score:3}]},
+  {id:'tennis', name:'网球', type:'运动健康', levels:[{label:'基础 + 实战 60 min',score:12},{label:'实战 / 专项训练',score:8},{label:'挥拍 / 步伐练习',score:3}]},
+  {id:'diet', name:'控食', type:'饮食管理', levels:[{label:'完全按计划饮食',score:10},{label:'仅一餐偏离计划',score:5},{label:'记录饮食',score:2}]},
+  {id:'language', name:'外语学习', type:'学习成长', levels:[{label:'输入 + 输出 45 min',score:10},{label:'有效学习 30 min',score:6},{label:'学习 15 min',score:3}]},
+  {id:'ip', name:'IP', type:'事业输出', levels:[{label:'完成发布 / 核心作品',score:18},{label:'脚本、素材或剪辑推进',score:10},{label:'选题 / 素材整理',score:4}]},
+  {id:'sidejob', name:'Sidejob', type:'事业输出', levels:[{label:'关键交付 / 收入推进',score:14},{label:'有效工作推进',score:8},{label:'处理单项事务',score:3}]}
 ];
 let state = JSON.parse(localStorage.getItem(KEY) || 'null') || {goals:seed, records:{}};
+if (!state.goalCatalogVersion) {
+  state.goals = seed;
+  state.goalCatalogVersion = 2;
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
 let editingId = null, selectedGoal = null, days = 7;
 const $ = s => document.querySelector(s);
 const dateKey = () => new Date().toISOString().slice(0,10);

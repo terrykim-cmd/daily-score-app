@@ -64,7 +64,7 @@ function renderReview(){
   const active=data.filter(x=>x.score>0), sum=data.reduce((a,x)=>a+x.score,0);
   $('#averageScore').textContent=(active.length?sum/active.length:0).toFixed(1);$('#activeDays').textContent=active.length;$('#bestScore').textContent=Math.max(0,...data.map(x=>x.score));
   const cap=Math.max(1,...data.map(x=>x.score),allocated());
-  $('#scoreChart').innerHTML=data.map(x=>`<div class="bar-wrap" title="${x.k}: ${x.score}分"><i class="bar" style="height:${Math.max(3,x.score/cap*100)}%"></i><small>${x.d.slice(5).replace('-','/')}</small></div>`).join('');
+  $('#scoreChart').innerHTML=data.map(x=>`<div class="bar-wrap" title="${x.k}: ${x.score}分"><i class="bar" style="height:${Math.max(3,x.score/cap*100)}%"></i><small>${x.k.slice(5).replace('-','/')}</small></div>`).join('');
   const types={};state.goals.forEach(g=>types[g.type||'未分类']=(types[g.type||'未分类']||0)+max(g)); const typeTotal=Math.max(1,Object.values(types).reduce((a,x)=>a+x,0));
   $('#typeDistribution').innerHTML=Object.entries(types).map(([t,s])=>`<div class="dist-row"><span>${escapeHtml(t)}</span><div class="dist-track"><i style="width:${s/typeTotal*100}%"></i></div><b>${s}分</b></div>`).join('') || '<p class="tip">暂无目标类型。</p>';
 }

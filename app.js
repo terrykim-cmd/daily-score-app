@@ -74,4 +74,5 @@ document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('di
 document.querySelectorAll('.bottom-nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.page').forEach(p=>p.hidden=p.id!==b.dataset.page);document.querySelectorAll('.bottom-nav button').forEach(x=>x.classList.toggle('active',x===b));$('#pageTitle').textContent=b.textContent.trim();$('#resetToday').style.visibility=b.dataset.page==='checkinPage'?'visible':'hidden'});
 document.querySelectorAll('.period-tabs button').forEach(b=>b.onclick=()=>{days=+b.dataset.days;document.querySelectorAll('.period-tabs button').forEach(x=>x.classList.toggle('active',x===b));renderReview()});
 $('#resetToday').onclick=()=>{if(confirm('清空今日所有打卡？')){delete state.records[dateKey()];save();renderAll()}};
+$('#clearYesterday').onclick=()=>{const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);if(!state.records[yesterday]){alert('昨天没有可清除的打卡记录。');return}if(confirm('清除昨天的全部打卡记录？此操作无法恢复。')){delete state.records[yesterday];save();renderAll()}};
 renderAll();

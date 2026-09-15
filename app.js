@@ -54,8 +54,9 @@ function renderCheckin(){
 function renderSchedule(rec){
   const startMinutes=5*60, slotHeight=28, endMinutes=24*60;
   const rows=[];for(let minute=startMinutes;minute<endMinutes;minute+=30){const h=Math.floor(minute/60).toString().padStart(2,'0'),m=(minute%60).toString().padStart(2,'0');rows.push(`<div class="schedule-tick">${m==='00'?`${h}:${m}`:''}</div>`)}
-  const blocks=state.goals.map(g=>{if(!g.timeStart||!g.timeEnd)return '';const toMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};const from=Math.max(startMinutes,toMin(g.timeStart)),to=Math.min(endMinutes,toMin(g.timeEnd));if(to<=from)return '';const done=rec[g.id];return `<div class="schedule-block ${done?'done':''}" style="top:${(from-startMinutes)/30*slotHeight}px;height:${Math.max(slotHeight,(to-from)/30*slotHeight-2)}px" title="${escapeAttr(g.name)} ${g.timeStart}–${g.timeEnd}"><b>${escapeHtml(g.name)}</b><small>${g.timeStart}</small></div>`}).join('');
+  const blocks=state.goals.map(g=>{if(!g.timeStart||!g.timeEnd)return '';const toMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};const from=Math.max(startMinutes,toMin(g.timeStart)),to=Math.min(endMinutes,toMin(g.timeEnd));if(to<=from)return '';const done=rec[g.id];return `<button type="button" class="schedule-block ${done?'done':''}" data-id="${g.id}" style="top:${(from-startMinutes)/30*slotHeight}px;height:${Math.max(slotHeight,(to-from)/30*slotHeight-2)}px" title="${escapeAttr(g.name)} ${g.timeStart}–${g.timeEnd}"><b>${escapeHtml(g.name)}</b><small>${g.timeStart}</small></button>`}).join('');
   $('#scheduleTimeline').innerHTML=rows.join('')+blocks;
+  document.querySelectorAll('.schedule-block').forEach(b=>b.onclick=()=>openLevel(b.dataset.id));
 }
 function renderReview(){
   const data=[]; for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10), r=state.records[k]||{};data.push({d,k,score:Object.values(r).reduce((a,x)=>a+x.score,0)});}

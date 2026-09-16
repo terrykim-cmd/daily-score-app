@@ -18,8 +18,9 @@ if (state.goalCatalogVersion < 3) {state.goals=state.goals.map(g=>{const preset=
 if (state.goalCatalogVersion < 4) {state.goals=state.goals.map(g=>{const preset=seed.find(x=>x.id===g.id);return preset?{...g,timeStart:preset.timeStart,timeEnd:preset.timeEnd}:g});state.goalCatalogVersion=4;localStorage.setItem(KEY, JSON.stringify(state));}
 let editingId = null, selectedGoal = null, days = 7, activeDayOffset = 0;
 const $ = s => document.querySelector(s);
-const dateKey = () => new Date().toISOString().slice(0,10);
-const activeDateKey = () => {const d=new Date();d.setDate(d.getDate()+activeDayOffset);return d.toISOString().slice(0,10)};
+const localDateKey = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const dateKey = () => localDateKey();
+const activeDateKey = () => {const d=new Date();d.setDate(d.getDate()+activeDayOffset);return localDateKey(d)};
 const todayRecord = () => state.records[activeDateKey()] || {};
 const save = () => localStorage.setItem(KEY, JSON.stringify(state));
 const max = g => Math.max(...g.levels.map(l=>Number(l.score)||0),0);
@@ -59,7 +60,7 @@ function renderSchedule(rec){
   document.querySelectorAll('.schedule-block').forEach(b=>b.onclick=()=>openLevel(b.dataset.id));
 }
 function renderReview(){
-  const data=[]; for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10), r=state.records[k]||{};data.push({d,k,score:Object.values(r).reduce((a,x)=>a+x.score,0)});}
+  const data=[]; for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=localDateKey(d), r=state.records[k]||{};data.push({d,k,score:Object.values(r).reduce((a,x)=>a+x.score,0)});}
   const active=data.filter(x=>x.score>0), sum=data.reduce((a,x)=>a+x.score,0);
   $('#averageScore').textContent=(active.length?sum/active.length:0).toFixed(1);$('#activeDays').textContent=active.length;$('#bestScore').textContent=Math.max(0,...data.map(x=>x.score));
   const cap=Math.max(1,...data.map(x=>x.score),allocated()), W=320,H=210,left=19,right=19,top=24,bottom=148,usable=W-left-right,step=data.length>1?usable/(data.length-1):0;

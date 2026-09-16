@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="goal-order.css" />
   <link rel="stylesheet" href="responsive.css" />
   <link rel="stylesheet" href="review-chart.css" />
+  <link rel="stylesheet" href="review-detail.css" />
 </head>
 <body>
   <main class="app-shell">
@@ -59,6 +60,7 @@
         <article class="card"><span>最佳得分</span><strong id="bestScore">0</strong><small>分</small></article>
       </div>
       <section class="card chart-card"><h2>每日得分</h2><div id="scoreChart" class="chart"></div></section>
+      <section class="card weakness-card"><h2>薄弱项</h2><p class="tip">按当前时间范围统计；点击曲线上的日期可查看当天明细。</p><div id="weaknessList" class="weakness-list"></div></section>
       <section class="card"><h2>目标类型分布</h2><div id="typeDistribution" class="distribution"></div></section>
     </section>
   </main>
@@ -84,6 +86,10 @@
     <div id="levelChoices" class="level-choices"></div>
     <button id="undoLevel" type="button" class="danger full" hidden>取消本项打卡</button>
   </form></dialog>
-  <script src="app.js?v=20260916-migrate-local-dates"></script>
+  <dialog id="reviewDialog"><form method="dialog">
+    <div class="dialog-header"><h2 id="reviewDialogTitle">当天复盘</h2><button type="button" class="close" data-close>×</button></div>
+    <div id="dailyReviewList" class="daily-review-list"></div>
+  </form></dialog>
+  <script src="app.js?v=20260916-review-details"></script>
 </body>
 </html>

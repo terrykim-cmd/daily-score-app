@@ -19,6 +19,13 @@ if (state.goalCatalogVersion < 4) {state.goals=state.goals.map(g=>{const preset=
 let editingId = null, selectedGoal = null, days = 7, activeDayOffset = 0;
 const $ = s => document.querySelector(s);
 const localDateKey = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+if (!state.localDateMigrated) {
+  const correctedRecords={};
+  Object.entries(state.records||{}).forEach(([key,record])=>{const [year,month,day]=key.split('-').map(Number),d=new Date(year,month-1,day);d.setDate(d.getDate()+1);const correctedKey=localDateKey(d);correctedRecords[correctedKey]={...(correctedRecords[correctedKey]||{}),...record};});
+  state.records=correctedRecords;
+  state.localDateMigrated=true;
+  localStorage.setItem(KEY,JSON.stringify(state));
+}
 const dateKey = () => localDateKey();
 const activeDateKey = () => {const d=new Date();d.setDate(d.getDate()+activeDayOffset);return localDateKey(d)};
 const todayRecord = () => state.records[activeDateKey()] || {};

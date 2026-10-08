@@ -10,22 +10,9 @@ const seed = [
   {id:'sidejob', name:'Sidejob', type:'事业输出', timeStart:'20:30', timeEnd:'21:30', levels:[{label:'关键交付 / 收入推进',score:14},{label:'有效工作推进',score:8},{label:'处理单项事务',score:3}]}
 ];
 let state = JSON.parse(localStorage.getItem(KEY) || 'null') || {goals:seed, records:{}};
-if (!state.goalCatalogVersion) {
-  state.goals = seed;
-  state.goalCatalogVersion = 2;
-}
-if (state.goalCatalogVersion < 3) {state.goals=state.goals.map(g=>{const preset=seed.find(x=>x.id===g.id);return preset&&!g.timeStart?{...g,timeStart:preset.timeStart,timeEnd:preset.timeEnd}:g});state.goalCatalogVersion=3;localStorage.setItem(KEY, JSON.stringify(state));}
-if (state.goalCatalogVersion < 4) {state.goals=state.goals.map(g=>{const preset=seed.find(x=>x.id===g.id);return preset?{...g,timeStart:preset.timeStart,timeEnd:preset.timeEnd}:g});state.goalCatalogVersion=4;localStorage.setItem(KEY, JSON.stringify(state));}
-let editingId = null, selectedGoal = null, days = 7, activeDayOffset = 0;
+let editingId = null, selectedGoal = null, days = 7, activeDayOffset = 0, reviewMonth = '';
 const $ = s => document.querySelector(s);
 const localDateKey = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-if (!state.localDateMigrated) {
-  const correctedRecords={};
-  Object.entries(state.records||{}).forEach(([key,record])=>{const [year,month,day]=key.split('-').map(Number),d=new Date(year,month-1,day);d.setDate(d.getDate()+1);const correctedKey=localDateKey(d);correctedRecords[correctedKey]={...(correctedRecords[correctedKey]||{}),...record};});
-  state.records=correctedRecords;
-  state.localDateMigrated=true;
-  localStorage.setItem(KEY,JSON.stringify(state));
-}
 const dateKey = () => localDateKey();
 const activeDateKey = () => {const d=new Date();d.setDate(d.getDate()+activeDayOffset);return localDateKey(d)};
 const todayRecord = () => state.records[activeDateKey()] || {};
@@ -66,17 +53,32 @@ function renderSchedule(rec){
   $('#scheduleTimeline').innerHTML=rows.join('')+blocks;
   document.querySelectorAll('.schedule-block').forEach(b=>b.onclick=()=>openLevel(b.dataset.id));
 }
+function hasRecord(record){return !!record && Object.keys(record).length>0;}
+function recordScore(record){return Object.values(record||{}).reduce((sum,item)=>sum+(Number(item.score)||0),0);}
+function monthSummaries(){
+  const months={};
+  Object.entries(state.records||{}).forEach(([key,record])=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(key)||!hasRecord(record))return;const month=key.slice(0,7);if(!months[month])months[month]={month,total:0,count:0};months[month].total+=recordScore(record);months[month].count++;});
+  return Object.values(months).sort((a,b)=>b.month.localeCompare(a.month));
+}
+function renderMonthlySummary(){
+  const summaries=monthSummaries(),months=[...new Set([localDateKey().slice(0,7),...summaries.map(x=>x.month),...(reviewMonth?[reviewMonth]:[])])].sort().reverse();
+  $('#reviewMonth').innerHTML='<option value="">最近天数 / 全部月份</option>'+months.map(m=>`<option value="${m}">${m.slice(0,4)} 年 ${Number(m.slice(5))} 月</option>`).join('');$('#reviewMonth').value=reviewMonth;
+  $('#monthlyList').innerHTML=summaries.filter(x=>!reviewMonth||x.month===reviewMonth).map(x=>`<div class="weakness-row"><div><b>${x.month.slice(0,4)} 年 ${Number(x.month.slice(5))} 月</b><small>有记录 ${x.count} 天 · 总分 ${x.total}</small></div><span class="weakness-score">${(x.total/x.count).toFixed(1)} 分</span></div>`).join('')||'<p class="tip">该范围暂无打卡记录。</p>';
+}
 function renderReview(){
-  const data=[]; for(let i=days-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=localDateKey(d), r=state.records[k]||{};data.push({d,k,score:Object.values(r).reduce((a,x)=>a+x.score,0)});}
-  const active=data.filter(x=>x.score>0), sum=data.reduce((a,x)=>a+x.score,0);
+  renderMonthlySummary();
+  const data=[];
+  const count=reviewMonth?new Date(+reviewMonth.slice(0,4),+reviewMonth.slice(5),0).getDate():days;
+  for(let i=0;i<count;i++){const d=reviewMonth?new Date(+reviewMonth.slice(0,4),+reviewMonth.slice(5)-1,i+1):new Date();if(!reviewMonth)d.setDate(d.getDate()-(count-1-i));const k=localDateKey(d),r=state.records[k]||{};data.push({d,k,score:recordScore(r)});}
+  const active=data.filter(x=>hasRecord(state.records[x.k])), sum=data.reduce((a,x)=>a+x.score,0);
   $('#averageScore').textContent=(active.length?sum/active.length:0).toFixed(1);$('#activeDays').textContent=active.length;$('#bestScore').textContent=Math.max(0,...data.map(x=>x.score));
   const cap=Math.max(1,...data.map(x=>x.score),allocated()), W=320,H=210,left=19,right=19,top=24,bottom=148,usable=W-left-right,step=data.length>1?usable/(data.length-1):0;
   const pointAt=(x,i)=>({x:left+step*i,y:bottom-(x.score/cap)*(bottom-top)}), points=data.map(pointAt), linePoints=points.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '), areaPoints=`${left},${bottom} ${linePoints} ${left+usable},${bottom}`;
-  const scoreFont=days>=30?7:days>=14?8:10,dateFont=days>=30?6:days>=14?7:9;
+  const scoreFont=count>=30?7:count>=14?8:10,dateFont=count>=30?6:count>=14?7:9;
   $('#scoreChart').className='chart line-chart';
   $('#scoreChart').innerHTML=`<svg class="score-line-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="近 ${days} 天每日得分曲线"><defs><linearGradient id="scoreFill" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#75a0ff" stop-opacity=".55"/><stop offset="1" stop-color="#75a0ff" stop-opacity="0"/></linearGradient></defs><line class="grid-line" x1="${left}" x2="${W-right}" y1="${top}" y2="${top}"/><line class="grid-line" x1="${left}" x2="${W-right}" y1="${(top+bottom)/2}" y2="${(top+bottom)/2}"/><line class="grid-line" x1="${left}" x2="${W-right}" y1="${bottom}" y2="${bottom}"/><text class="axis-label" x="1" y="${top+3}">${cap}</text><text class="axis-label" x="4" y="${bottom}">0</text><polygon class="score-area" points="${areaPoints}"/><polyline class="score-line" points="${linePoints}"/>${data.map((x,i)=>{const p=points[i],label=x.k.slice(5).replace('-','/');return `<g class="score-day" data-key="${x.k}"><title>${x.k}：${x.score} 分</title><circle class="score-dot" cx="${p.x}" cy="${p.y}" r="3"/><text class="score-value" x="${p.x}" y="${Math.max(13,p.y-7)}" text-anchor="middle" font-size="${scoreFont}">${x.score}</text><text class="date-label" transform="rotate(-90 ${p.x} 191)" x="${p.x}" y="191" text-anchor="end" font-size="${dateFont}">${label}</text></g>`}).join('')}</svg>`;
   document.querySelectorAll('.score-day').forEach(el=>el.onclick=()=>openDailyReview(el.dataset.key));
-  const weakness=state.goals.map(g=>{const scores=data.map(x=>state.records[x.k]?.[g.id]?.score||0),total=scores.reduce((a,x)=>a+x,0),maximum=max(g),missed=data.filter(x=>!state.records[x.k]?.[g.id]).length;return {g,average:total/days,rate:total/(days*maximum)*100,missed}}).sort((a,b)=>a.rate-b.rate||a.average-b.average);
+  const weakness=state.goals.map(g=>{const scores=active.map(x=>state.records[x.k]?.[g.id]?.score||0),total=scores.reduce((a,x)=>a+x,0),maximum=max(g),missed=active.filter(x=>!state.records[x.k]?.[g.id]).length;return {g,average:active.length?total/active.length:0,rate:active.length&&maximum?total/(active.length*maximum)*100:0,missed}}).sort((a,b)=>a.rate-b.rate||a.average-b.average);
   $('#weaknessList').innerHTML=weakness.map(x=>`<div class="weakness-row"><div><b>${escapeHtml(x.g.name)}</b><small>平均 ${x.average.toFixed(1)} / ${max(x.g)} 分 · 未打卡 ${x.missed} 天</small></div><span class="weakness-score">${Math.round(x.rate)}%</span></div>`).join('') || '<p class="tip">暂无目标。</p>';
   const types={};state.goals.forEach(g=>types[g.type||'未分类']=(types[g.type||'未分类']||0)+max(g)); const typeTotal=Math.max(1,Object.values(types).reduce((a,x)=>a+x,0));
   $('#typeDistribution').innerHTML=Object.entries(types).map(([t,s])=>`<div class="dist-row"><span>${escapeHtml(t)}</span><div class="dist-track"><i style="width:${s/typeTotal*100}%"></i></div><b>${s}分</b></div>`).join('') || '<p class="tip">暂无目标类型。</p>';
@@ -98,7 +100,9 @@ $('#goalForm').onsubmit=e=>{e.preventDefault();const levels=[...document.querySe
 $('#deleteGoal').onclick=()=>{if(confirm('删除这个项目？历史打卡记录将保留。')){state.goals=state.goals.filter(x=>x.id!==editingId);save();$('#goalDialog').close();renderAll()}};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 document.querySelectorAll('.bottom-nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.page').forEach(p=>p.hidden=p.id!==b.dataset.page);document.querySelectorAll('.bottom-nav button').forEach(x=>x.classList.toggle('active',x===b));$('#pageTitle').textContent=b.textContent.trim();$('#resetToday').style.visibility=b.dataset.page==='checkinPage'?'visible':'hidden'});
-document.querySelectorAll('.period-tabs button').forEach(b=>b.onclick=()=>{days=+b.dataset.days;document.querySelectorAll('.period-tabs button').forEach(x=>x.classList.toggle('active',x===b));renderReview()});
+document.querySelectorAll('[data-days]').forEach(b=>b.onclick=()=>{days=+b.dataset.days;reviewMonth='';document.querySelectorAll('[data-days]').forEach(x=>x.classList.toggle('active',x===b));renderReview()});
+$('#reviewMonth').onchange=e=>{reviewMonth=e.target.value;document.querySelectorAll('[data-days]').forEach(x=>x.classList.toggle('active',!reviewMonth&&+x.dataset.days===days));renderReview()};
+document.querySelectorAll('[data-review-view]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-review-view]').forEach(x=>x.classList.toggle('active',x===b));$('#dailyReview').hidden=b.dataset.reviewView!=='dailyReview';$('#monthlyReview').hidden=b.dataset.reviewView!=='monthlyReview';renderReview()});
 $('#resetToday').onclick=()=>{const label=activeDayOffset===0?'今日':activeDayOffset===-1?'昨日':'前天';if(confirm(`清空${label}所有打卡？`)){delete state.records[activeDateKey()];save();renderAll()}};
 $('#undoLevel').onclick=()=>{if(!selectedGoal||!todayRecord()[selectedGoal])return;if(confirm('取消本项打卡？该项目本次得分将被移除。')){const record={...todayRecord()};delete record[selectedGoal];if(Object.keys(record).length)state.records[activeDateKey()]=record;else delete state.records[activeDateKey()];save();$('#levelDialog').close();renderAll()}};
 $('#previousDate').onclick=()=>{if(activeDayOffset>-2){activeDayOffset--;renderCheckin()}};
